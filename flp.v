@@ -69,21 +69,15 @@ Definition removeMsg (p:Process)(mv:MessageValue):Process :=
  
 
 
-Definition decisionState (p:Process) : bool :=
+Definition decisionState (p:Process) : Prop :=
 match outputRegister p with
-|b => false
-|_ => true
+|b => False
+|_ => True
 end.
 
 
 Definition Configuration:Type := Vector.t Process numOfProcesses.
 Parameter initialConfiguration : Configuration.
-
-
-
-Definition NonDeterministicChoice := set MessageValue -> Message.
-
-Variable ndChoiceImpl: NonDeterministicChoice.
 
 
 Definition updateCfg (c:Configuration)(pid:ProcessId)(fn: Process -> Process) : Configuration :=
@@ -113,33 +107,45 @@ pid1 <> pid2 -> p1 = fn1 c[@pid1] -> p2 = fn2 c[@pid2] -> updateCfg (updateCfg c
 Lemma send_length_comm: forall pid1 pid2 m c, pid1 <> pid2 -> send (send c pid2 m) pid1 m  = send (send c pid1 m) pid2 m.
 
 
-Definition getMessageAndUpdateProcess (p:Process) : prod Process (list Event) := 
-let (msg, pp) := (match ndChoiceImpl (messagesBuffer p) with
+Definition getMessageAndUpdateProcess (choiceFn: set MessageValue -> Message)(p:Process) : prod Process (list Event) := 
+let (msg, pp) := (match choiceFn(messagesBuffer p) with
 | emptyMessage => pair emptyMessage p
 | messageValue mv =>  pair (messageValue mv) (removeMsg p mv)
 end) in updateState pp msg.
 
 (** receive with send **)
-Definition receive (cfg:Configuration) (pid:ProcessId) : prod (list Event) Configuration :=
-updateCfgWithEvents cfg pid getMessageAndUpdateProcess. 
+Definition receive (choiceFn: set MessageValue -> Message) (cfg:Configuration) (pid:ProcessId) : prod (list Event) Configuration :=
+updateCfgWithEvents cfg pid (getMessageAndUpdateProcess choiceFn). 
 
-(** not used, delete? **)
-Definition ChooseProcess := Configuration -> ProcessId.
-Variable chooseProcessImpl: ChooseProcess.
+
 
 
 Definition sendOut(c:Configuration)(evt:Event) : Configuration := send c (fst evt) (snd evt).
 
 
-Definition step (c:Configuration) : Configuration := 
+Definition ChooseProcess := Configuration -> ProcessId.
+Variable chooseProcessImpl: ChooseProcess.
+
+Definition NonDeterministicChoice := set MessageValue -> Message.
+Variable ndChoiceImpl: NonDeterministicChoice.
+
+
+Definition auto_step (c:Configuration) : Configuration := 
    let pid := chooseProcessImpl c in 
-   let (evts, c1) := receive c pid in
+   let (evts, c1) := receive ndChoiceImpl c pid in
+   List.fold_left sendOut evts c1.
+
+
+Definition step (c:Configuration)(evt:Event) : Configuration := 
+   let pid := fst evt in 
+   let msgValue := snd evt in 
+   let (evts, c1) := receive (fun msgs => messageValue msgValue) c pid in
    List.fold_left sendOut evts c1.
 
 
 Definition Schedule := Configuration -> list Event.
 
-Definition Run := 
+Definition Run (c:Configuration)(events: list Event):Configuration := List.fold_left step events c.
 
 
 (**
@@ -150,3 +156,18 @@ in C1 and C2, respectively, are disjoint, then s2 can be applied to C1 and s1 ca
 applied to C2, and both lead to the same configuration Cf.
 
 **)
+
+
+
+Definition hasDecisionValue (c:Configuration) : Prop := Exists decisionState c.
+
+(** LEMMA 2. P has a bivalent initial configuration. **)
+
+(** LEMMA 3. Let C be a bivalent configuration of P, and let e = (p, m) be an event 
+that is applicable to C. Let CE be the set of configurations reachable from C 
+without applying e, and let D = {e(E) = (e(E) | E belongs to CE and e is applicable to E). 
+Then, D contains a bivalent configuration. **)
+
+(** THEOREM 1. No consensus protocol is totally correct in spite of one fault. **)
+
+
