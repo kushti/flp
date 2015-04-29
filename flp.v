@@ -23,8 +23,8 @@ Local Open Scope list_scope.
 values in (b, 0, 1), so (b, f, t) **)
 Inductive Register :Type :=
   | b
-  | f
-  | t.
+  | fval
+  | tval.
 
 
 Definition InternalState:Type := nat.
@@ -148,6 +148,31 @@ Definition Schedule := Configuration -> list Event.
 Definition Run (c:Configuration)(events: list Event):Configuration := List.fold_left step events c.
 
 
+Fixpoint disjoint (xl yl : list Event) :=
+  match xl with
+    | List.nil => True
+    | List.cons x xl =>  ~ List.In x yl /\ disjoint xl yl
+  end.
+
+
+ 
+(**
+
+Testing code, to run with numOfProcesses defined, e.g. Definition numOfProcesses := 3.
+
+Definition e1:Event := pair (FS F1) (6:MessageValue).
+Definition e2:Event := pair (FS F1) (4:MessageValue).
+
+Lemma dj_ex_1 : disjoint (List.cons e1 List.nil) (List.cons e2 List.nil) -> True.
+Proof. trivial. Qed.
+
+Lemma dj_ex_2 : disjoint (List.cons e2 List.nil) (List.cons e2 List.nil) -> False.
+Proof. unfold disjoint. intros. intuition. Qed.
+
+**)
+
+
+
 (**
 
 LEMMA 1. Suppose that from some configuration C, the schedules s1, s2 lead 
@@ -157,9 +182,21 @@ applied to C2, and both lead to the same configuration Cf.
 
 **)
 
+Lemma FLP_LEMMA1: forall c l1 l2, disjoint l1 l2 -> Run (Run c l1) l2 = Run (Run c l2) l1.
 
 
-Definition hasDecisionValue (c:Configuration) : Prop := Exists decisionState c.
+
+
+
+Definition decisionValues (c:Configuration) : prod Prop Prop  := let regs := map outputRegister c in
+pair (In fval regs) (In tval regs).
+
+Definition hasDecisionValue (c:Configuration) : Prop := let dv := decisionValues c in fst dv \/ snd dv. 
+Definition isZeroValent (c:Configuration) : Prop := let dv := decisionValues c in fst dv /\ ~ snd dv.
+Definition isOneValent (c:Configuration) : Prop := let dv := decisionValues c in fst dv /\ ~ snd dv.
+Definition isBivalent (c:Configuration) : Prop := let dv := decisionValues c in fst dv /\ snd dv.
+
+
 
 (** LEMMA 2. P has a bivalent initial configuration. **)
 
