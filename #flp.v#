@@ -1,6 +1,9 @@
 (** FLP Impossibility Proof **)
 (** Made after original paper http://cs-www.cs.yale.edu/homes/arvind/cs425/doc/fischer.pdf **) 
-(** Also see an awesome blogpost http://the-paper-trail.org/blog/a-brief-tour-of-flp-impossibility/ **)
+(** described more informally in the awesome blogpost http://the-paper-trail.org/blog/a-brief-tour-of-flp-impossibility/ **)
+(** also constructive proofs: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.221.7907&rep=rep1&type=pdf **)
+(** and http://www.cs.cornell.edu/courses/cs7412/2011sp/ConsensusRebecca.pdf **)
+
 
 Require Import Arith.
 Require Import List.
@@ -36,7 +39,7 @@ In (FinishedProcess b) cfg.
 Definition decided(cfg:Configuration):Prop := decidedValue cfg true \/ decidedValue cfg false.
 
 
-Axiom Corectness1: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
+Axiom Consistency: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
 
 
 (** A particular execution, defined by a possibly infinite sequence of events from 
@@ -50,7 +53,6 @@ Parameter chooseFn : Configuration -> nat -> Process.
 (** Configuration transition function **)
 Parameter eventFn : Configuration -> nat -> Configuration.
 
-Axiom ev1: forall cfg msg, length (eventFn cfg msg) = length c
 
 
 (** There's no change in deciding value **)
@@ -138,7 +140,7 @@ tauto.
 Qed.
 
 
-
+(** Lemma 2 from original paper **)
 Theorem FLP_Lemma2: bivalent(InitialConfiguration).
 Proof.
 pose proof InitialNoConsensus as I.
@@ -150,7 +152,20 @@ Qed.
 
 
 (** todo: prove it **)
+Axiom OneStepLemma: forall cfg, bivalent cfg -> exists msg, bivalent (run cfg [msg]).
+
+
+(** todo: should be proven using OneStepLemma **)
 Axiom FLP_Lemma3: forall cfg, bivalent cfg -> forall m, exists s, length s > m -> bivalent (run cfg s).
+
+
+
+
+
+
+
+
+
 
 
 (** THEOREM 1. No consensus protocol is totally correct in spite of one fault. **)
