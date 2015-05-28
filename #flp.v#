@@ -150,18 +150,20 @@ Qed.
 
 
 (** todo: prove it **)
-Axiom FLP_Lemma3: forall cfg, bivalent cfg -> exists s, length s > 0 -> bivalent (run cfg s).
+Axiom FLP_Lemma3: forall cfg, bivalent cfg -> forall m, exists s, length s > m -> bivalent (run cfg s).
 
 
 (** THEOREM 1. No consensus protocol is totally correct in spite of one fault. **)
 
-Theorem FLP_main: exists s, length s > 0 -> ~ deciding InitialConfiguration s.
+Theorem FLP_main: forall m, exists s, length s > m -> ~ deciding InitialConfiguration s.
 Proof.
+intros m.
 pose proof FLP_Lemma2 as FL2.
 pose proof FLP_Lemma3 as FL3.
 specialize (FL3 InitialConfiguration).
-destruct FL3.
-trivial.
+intuition.
+specialize (H m).
+destruct H.
 apply ex_intro with (x:=x).
 unfold deciding.
 generalize dependent H.
