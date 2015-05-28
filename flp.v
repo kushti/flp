@@ -155,8 +155,17 @@ Qed.
 Axiom OneStepLemma: forall cfg, bivalent cfg -> exists msg, bivalent (run cfg [msg]).
 
 
-(** todo: should be proven using OneStepLemma **)
-Axiom FLP_Lemma3: forall cfg, bivalent cfg -> forall m, exists s, length s > m -> bivalent (run cfg s).
+Theorem FLP_Lemma3: forall cfg, bivalent cfg -> forall m, exists s, length s > m -> bivalent (run cfg s).
+Proof.
+intros. 
+pose proof OneStepLemma as O. 
+specialize (O cfg).
+intuition.
+destruct H0.
+exists [x]. 
+intros. 
+apply H0.
+Qed.
 
 
 
