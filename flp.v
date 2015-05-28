@@ -4,6 +4,7 @@
 
 Require Import Arith.
 Require Import List.
+Require Import Coq.Logic.Classical_Pred_Type.
 
 Set Implicit Arguments.
 Import ListNotations.
@@ -36,22 +37,21 @@ In (FinishedProcess b) cfg.
 Definition decided(cfg:Configuration):Prop := decidedValue cfg true \/ decidedValue cfg false.
 
 
-Axiom Corectness: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
-
+Axiom Corectness1: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
 
 
 (** A particular execution, defined by a possibly infinite sequence of events from 
 a starting configuration C is called a schedule and the sequence of steps taken 
 to realise the schedule is a run **)
-
 Definition Schedule := list nat.
+
+
+Parameter chooseFn : Configuration -> nat -> Process.
 
 (** Configuration transition function **)
 Parameter eventFn : Configuration -> nat -> Configuration.
 
-
-(**Only one process changed 
-Axiom Step: **) 
+Axiom ev1: forall cfg msg, length (eventFn cfg msg) = length c
 
 
 (** There's no change in deciding value **)
@@ -100,7 +100,7 @@ Axiom OneFaultMax: forall (cfg:Configuration)(s:Schedule), admissible cfg s.
 to the properties of consensus **)
 Definition deciding(cfg:Configuration)(s:Schedule): Prop := decided (run cfg s).
 
-Parameter InitialConfiguration: Configuration.
+Hypothesis InitialConfiguration: Configuration.
 
 
 Axiom InitialNoConsensus: ~decided InitialConfiguration.
@@ -109,27 +109,29 @@ Axiom FalseReacheable: exists s2, decidedValue (run InitialConfiguration s2) fal
 
 
 
-Definition univalent_true(cfg:Configuration):= (~ decided cfg) -> 
+Definition univalent_true(cfg:Configuration):= 
 (exists s1, decidedValue(run cfg s1) true) /\ ~(exists s2, decidedValue (run cfg s2) false).
 
-Definition univalent_false(cfg:Configuration):= (~ decided cfg) -> 
+Definition univalent_false(cfg:Configuration):= 
 (exists s1, decidedValue(run cfg s1) false) -> ~(exists s2, decidedValue (run cfg s2) true).
 
 Definition univalent(cfg:Configuration):= univalent_true cfg \/ univalent_false cfg.
 
-Definition bivalent(cfg:Configuration):= (~ decided cfg) ->
-((exists s1, decidedValue(run cfg s1) false) /\ 
-  (exists s2, decidedValue (run cfg s2) true)).
-
-Axiom ValuesReacheable: forall cfg, ~ decided cfg -> bivalent cfg \/ univalent cfg.
+Definition bivalent(cfg:Configuration):= (~ decided cfg) /\
+  (exists s1, decidedValue(run cfg s1) false) /\ 
+  (exists s2, decidedValue (run cfg s2) true).
 
 
+(** "By the total correctness of P, and the fact that there are always 
+admissible runs, V > 0" **)
+Axiom Correctness2: forall cfg, bivalent cfg \/ univalent cfg.
 
 
-Lemma BivNotUn: forall cfg, ~ decided cfg -> bivalent cfg -> ~ univalent cfg.
+
+Lemma BivNotUn: forall cfg, bivalent cfg -> ~ univalent cfg.
 Proof.
 intros.
-unfold bivalent in H0.
+unfold bivalent in H.
 unfold univalent.
 unfold univalent_true.
 unfold univalent_false.
@@ -147,54 +149,45 @@ unfold bivalent.
 intuition.
 Qed.
 
-Theorem FLP_Lemma3_pl: forall cfg s, bivalent cfg -> ~ decided cfg -> univalent_true (run cfg s) \/ univalent_false (run cfg s).
+
+(** todo: prove it **)
+Axiom FLP_Lemma3: forall cfg, bivalent cfg -> exists s, bivalent (run cfg s).
+
+
+
+Lemma main_pl1: forall cfg, bivalent cfg -> ~ deciding cfg [].
 Proof.
 unfold bivalent.
-unfold univalent_true.
-unfold univalent_false.
-intuition.
-pose proof Corectness as C.
-intuition.
-left.
-intuition.
-unfold decided in H1.
-intuition.
-destruct C.
+unfold deciding.
+unfold decided.
+simpl.
+tauto.
+Qed.
 
 
-
-
-
-
-
-
-
-
-
-
-Theorem FLP_Lemma3: forall cfg, ~ decided cfg -> bivalent cfg -> exists s, bivalent (run cfg s).
+Lemma main_pl2: forall cfg, bivalent cfg -> exists s, ~ deciding cfg s.
 Proof.
 intros.
-pose proof ValuesReacheable as V.
-pose proof BivNotUn as B.
-
-
-
-
-
-
-
+pose proof main_pl1 as M.
+specialize (M cfg).
+intuition.
+apply ex_intro with (x:=[]).
+trivial.
+Qed.
 
 
 
 (** THEOREM 1. No consensus protocol is totally correct in spite of one fault. **)
 
-Theorem FLP_main: forall m, exists s, length s > m -> ~(deciding InitialConfiguration s).
+Theorem FLP_main: exists s, deciding InitialConfiguration s -> False.
 Proof.
 intros.
 pose proof InitialNoConsensus as I.
-pose proof TrueReacheable as T.
-pose proof FalseReacheable as F.
 pose proof FLP_Lemma2 as FL2.
+pose proof FLP_Lemma3 as FL3.
+pose proof main_pl2 as M.
+specialize (FL3 InitialConfiguration).
+intuition.
+Qed.
 
 
