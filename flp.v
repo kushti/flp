@@ -237,96 +237,62 @@ exists x0.
 trivial.
 Qed.
 
+(** todo: prove ? **)
 Axiom Correctness4: forall cfg s, univalent_false cfg -> ~ univalent_true (run cfg s).
 Axiom Correctness5: forall cfg s, univalent_true cfg -> ~ univalent_false (run cfg s).
 
-(**
-Axiom Correctness6: forall cfg msg n x, univalent_false (run cfg (n :: x)) -> univalent_true (run cfg (n :: msg :: x)) -> False.
-Axiom Correctness7: forall cfg msg n x, univalent_true (run cfg (n :: x)) -> univalent_false (run cfg (n :: msg :: x)) -> False.
-Axiom ArbitraryDelay: forall cfg (msg:nat) (n:nat) (s:list nat), run cfg [msg] = run cfg (n::msg::s).
-
-**)
+Axiom Correctness6: forall cfg s, univalent_true cfg -> univalent_true (run cfg s).
+Axiom Correctness7: forall cfg s, univalent_false cfg -> univalent_false (run cfg s).
 
 Axiom Async1: forall cfg msg1 msg2, (chooseFn cfg msg1) <>  (chooseFn cfg msg2) -> 
   run cfg ([msg1;msg2]) = run cfg ([msg2;msg1]).
 
-Axiom Async2: forall cfg msg1 msg2, (chooseFn cfg msg1) <>  (chooseFn cfg msg2) -> 
-  run cfg ([msg1]) = run cfg (msg1::[msg2]).
+(** todo: proove? **)
+Axiom RunCommutativity: forall cfg msg s, run (run cfg [msg]) s = run cfg (msg :: s).
+
 
 Axiom Decidability: forall cfg n1 n2, chooseFn cfg n1 = chooseFn cfg n2 \/ chooseFn cfg n1 <> chooseFn cfg n2.
 
 
-Lemma ProcessStep: forall cfg msg1 msg2, 
+Lemma OneStepLemmaP1: forall cfg msg1 msg2, 
   chooseFn cfg msg1 <> chooseFn cfg msg2 /\ 
     univalent_false (run cfg [msg1]) /\
-    univalent_true (run cfg [msg2]) -> False.
+    univalent_true (run cfg [msg2])-> False.
 Proof.
-intros.
-destruct H.
-pose proof Async2 as A2.
-specialize (A2 cfg msg1 msg2).
 intuition.
-rewrite H0 in H1.
-pose proof Async2 as A2.
-specialize (A2 cfg msg2 msg1).
-intuition.
-rewrite H3 in H2.
-pose proof Correctness3 as C3.
-specialize(C3 (run cfg [msg1; msg2])).
+pose proof RunCommutativity as RC.
+specialize(RC cfg).
 pose proof Async1 as A1.
 specialize(A1 cfg msg1 msg2).
+pose proof Correctness6 as C6.
+pose proof Correctness7 as C7.
+specialize (C6 (run cfg [msg2]) [msg1]).
+rewrite RC in C6.
+specialize (C7 (run cfg [msg1]) [msg2]).
+rewrite RC in C7.
 intuition.
-rewrite H4 in H5.
+rewrite H1 in H3.
+pose proof Correctness3 as C3.
+specialize(C3 (run cfg [msg2; msg1])).
 tauto.
 Qed.
 
-
-(** todo: prove **)
-Axiom OneStepLemmaP3: forall cfg, bivalent cfg -> ~ forall msg, univalent (run cfg [msg]).
-(*
+Lemma OneStepLemmaP2: forall cfg msg1 msg2,  
+    univalent_false (run cfg [msg1]) /\
+    univalent_true (run cfg [msg2]) -> chooseFn cfg msg1 = chooseFn cfg msg2.
 Proof.
-intros.
-pose proof BivalentPaths as B.
-specialize(B cfg).
-intuition.
-unfold univalent.
-destruct H1.
-destruct H4.
-unfold univalent in H0.
-destruct x.
-simpl in H1.
-apply UnFNotBiv in H1.
-tauto.
-destruct x0.
-simpl in H3.
-apply UnTNotBiv in H3.
-tauto.
-assert (Hn := H0 n).
-assert (Hn0 := H0 n0).
-assert (D := Decidability cfg n n0).
-destruct D.
-Qed.
-*)
-
-(** todo : prove **)
-Axiom NotForAllExists: forall cfg, (~ forall msg, univalent (run cfg [msg])) -> exists msg0, ~ univalent (run cfg [msg0]). 
-
-
-
-Theorem OneStepLemma: forall cfg,  bivalent cfg -> exists msg, bivalent (run cfg [msg]).
-Proof.
-intros.
-pose proof OneStepLemmaP3 as P3.
-specialize(P3 cfg).
-pose proof NotForAllExists as NA.
-specialize(NA cfg).
-intuition.
-destruct H1.
-exists x.
-pose proof BivNotUn as B.
-specialize (B (run cfg [x])).
+intros cfg msg1 msg2.
+pose proof OneStepLemmaP1 as P1.
+specialize(P1 cfg msg1 msg2).
 tauto.
 Qed.
+
+(** todo: rename Message -> Step, msg -> step **)
+Axiom AnotherProcessStep: forall cfg msg, exists msg0, chooseFn cfg msg <> chooseFn cfg msg0. 
+Parameter randomApplicableStep: Configuration -> nat.
+
+
+Axiom OneStepLemma: forall cfg, bivalent cfg -> exists msg, bivalent (run cfg [msg]).
 
 
 Theorem FLP_Lemma3: forall cfg, bivalent cfg -> forall m, exists s, length s > m -> bivalent (run cfg s).
