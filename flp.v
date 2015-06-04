@@ -135,9 +135,9 @@ Qed.
 
 
 
-Lemma BivalentPaths: forall cfg, bivalent cfg -> (~ decided cfg) /\
-  (exists s1, univalent_false(run cfg s1)) /\ 
-  (exists s2, univalent_true(run cfg s2)).
+Lemma BivalentPaths: forall cfg, bivalent cfg ->
+  (exists s1, univalent_false(run cfg (s1))) /\ 
+  (exists s2, univalent_true(run cfg (s2))).
 Proof.
 intros cfg.
 pose proof Consistency as C.
@@ -168,6 +168,14 @@ destruct H2.
 specialize (C (run (run cfg x0) x1)).
 auto.
 Qed.
+
+(** todo: prove **)
+Axiom BivalentPaths2: forall cfg, bivalent cfg ->
+  (exists st1 s1, univalent_false(run cfg (st1::s1))) /\ 
+  (exists st2 s2, univalent_true(run cfg (st2::s2))).
+
+
+
 
 Lemma UnFNotBiv: forall cfg, univalent_false cfg -> ~ bivalent cfg.
 Proof.
@@ -288,11 +296,118 @@ tauto.
 Qed.
 
 (** todo: rename Message -> Step, msg -> step **)
-Axiom AnotherProcessStep: forall cfg msg, exists msg0, chooseFn cfg msg <> chooseFn cfg msg0. 
-Parameter randomApplicableStep: Configuration -> nat.
+Axiom AnotherProcessStepExists: forall cfg msg, exists msg0, chooseFn cfg msg <> chooseFn cfg msg0. 
+Parameter randomStep: Configuration -> nat.
 
 
-Axiom OneStepLemma: forall cfg, bivalent cfg -> exists msg, bivalent (run cfg [msg]).
+Lemma BivNotUnTAndUnF: forall cfg, bivalent cfg <-> ~ univalent_true cfg /\ ~ univalent_false cfg.
+Proof.
+intros.
+intuition.
+(** CASE: univalent_true cfg **)
+pose proof UnTNotBiv as UT.
+specialize(UT cfg).
+tauto.
+(** CASE: univalent_false cfg **)
+pose proof UnFNotBiv as UF.
+specialize(UF cfg).
+tauto.
+(** CASE: opposite direction **)
+apply BivNotUn.
+unfold univalent.
+tauto.
+Qed.
+
+Lemma OtherBivalent: forall cfg msg1 msg2, (chooseFn cfg msg1 = chooseFn cfg msg2 /\ 
+  univalent_true (run cfg [msg1]) /\ univalent_false (run cfg [msg2])) -> 
+  forall msg, chooseFn cfg msg <> chooseFn cfg msg1 -> bivalent (run cfg [msg]).
+Proof.
+intuition.
+apply BivNotUn.
+unfold univalent.
+pose proof OneStepLemmaP1 as P1.
+intuition.
+(** CASE : univalent_true (run cfg [msg]) **)
+assert(P1T := P1 cfg msg2 msg).
+rewrite H0 in H1.
+auto.
+(** CASE : univalent_false (run cfg [msg]) **)
+assert(P1H := P1 cfg msg msg1).
+auto.
+Qed. 
+
+
+(** only the same process could goes to univalent_true & univalent_false states, so we choose another process and
+it must be bivalent as proven by the OtherBivalent lemma **)
+
+Lemma OneStepLemmaP3: forall cfg msg1 msg2, univalent_true (run cfg [msg1]) /\ univalent_false (run cfg [msg2]) -> 
+  exists msg : nat, bivalent (run cfg [msg]).  
+Proof.
+intros.
+pose proof OneStepLemmaP2 as P2.
+specialize(P2 cfg msg2 msg1).
+intuition.
+assert(AP := AnotherProcessStepExists cfg msg1).
+destruct AP.
+pose proof OtherBivalent as OB.
+specialize (OB cfg msg1 msg2).
+intuition.
+rewrite H in H3.
+intuition.
+specialize(H3 x).
+intuition.
+exists x.
+assumption.
+Qed.
+
+(** todo: prove **)
+Axiom OneStepLemmaP4: forall cfg st s, univalent_false (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_false (run cfg [st]).
+Axiom OneStepLemmaP5: forall cfg st s, univalent_true (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_true (run cfg [st]).
+
+Theorem OneStepLemma: forall cfg, bivalent cfg -> exists msg, bivalent (run cfg [msg]).
+Proof.
+intros.
+assert(S := randomStep cfg).
+pose proof Correctness as C.
+specialize(C (run cfg [S])). 
+intuition. 
+(** CASE: bivalent (run cfg [S]) **)
+exists S.
+assumption.
+(** CASE: bivalent (run cfg [S])  proven **)
+unfold univalent in H0.
+pose proof BivalentPaths2 as B2.
+specialize(B2 cfg).
+destruct H0.
+
+(** CASE: univalent_true (run cfg [S]) - follow univalent_false path then if processes are different **)
+intuition.
+destruct H2.
+(** if there are some steps before entering univalent_false, enter first one if processes are different or step
+with other process (it should be bivalent if protocol is partially correct) **)
+destruct H1.
+pose proof OneStepLemmaP4 as P4.
+specialize(P4 cfg x x0).
+intuition.
+exists x.
+trivial.
+pose proof OneStepLemmaP3 as P3.
+specialize(P3 cfg S x).
+tauto.
+
+(** CASE: univalent_false (run cfg [S]) - symmetrical to previous **)
+intuition.
+destruct H3.
+destruct H1.
+pose proof OneStepLemmaP5 as P5.
+specialize(P5 cfg x x0).
+intuition.
+exists x.
+trivial.
+pose proof OneStepLemmaP3 as P3.
+specialize(P3 cfg x S).
+tauto.
+Qed.
 
 
 Theorem FLP_Lemma3: forall cfg, bivalent cfg -> forall m, exists s, length s > m -> bivalent (run cfg s).
