@@ -66,6 +66,9 @@ match s with
 | cons msg t => eventFn (run cfg t) msg
 end.  
 
+(** todo: proove? **)
+Axiom RunCommutativity: forall cfg msg s, run (run cfg [msg]) s = run cfg (msg :: s).
+
 
 Lemma Termination1: forall cfg b s, decidedValue cfg b -> decidedValue (run cfg s) b.
 Proof.
@@ -252,11 +255,16 @@ Axiom Correctness5: forall cfg s, univalent_true cfg -> ~ univalent_false (run c
 Axiom Correctness6: forall cfg s, univalent_true cfg -> univalent_true (run cfg s).
 Axiom Correctness7: forall cfg s, univalent_false cfg -> univalent_false (run cfg s).
 
+(** todo: prove ! **)
+Axiom Correctness8: forall cfg st s, univalent_false (run cfg (st :: s)) -> 
+  bivalent (run cfg [st]) \/ univalent_false (run cfg [st]).
+
+(** todo: prove ! **)
+Axiom Correctness9: forall cfg st s, univalent_true (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_true (run cfg [st]).
+
 Axiom Async1: forall cfg msg1 msg2, (chooseFn cfg msg1) <>  (chooseFn cfg msg2) -> 
   run cfg ([msg1;msg2]) = run cfg ([msg2;msg1]).
 
-(** todo: proove? **)
-Axiom RunCommutativity: forall cfg msg s, run (run cfg [msg]) s = run cfg (msg :: s).
 
 
 Axiom Decidability: forall cfg n1 n2, chooseFn cfg n1 = chooseFn cfg n2 \/ chooseFn cfg n1 <> chooseFn cfg n2.
@@ -360,9 +368,6 @@ exists x.
 assumption.
 Qed.
 
-(** todo: prove **)
-Axiom OneStepLemmaP4: forall cfg st s, univalent_false (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_false (run cfg [st]).
-Axiom OneStepLemmaP5: forall cfg st s, univalent_true (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_true (run cfg [st]).
 
 Theorem OneStepLemma: forall cfg, bivalent cfg -> exists msg, bivalent (run cfg [msg]).
 Proof.
@@ -386,8 +391,8 @@ destruct H2.
 (** if there are some steps before entering univalent_false, enter first one if processes are different or step
 with other process (it should be bivalent if protocol is partially correct) **)
 destruct H1.
-pose proof OneStepLemmaP4 as P4.
-specialize(P4 cfg x x0).
+pose proof Correctness8 as C8.
+specialize(C8 cfg x x0).
 intuition.
 exists x.
 trivial.
@@ -399,8 +404,8 @@ tauto.
 intuition.
 destruct H3.
 destruct H1.
-pose proof OneStepLemmaP5 as P5.
-specialize(P5 cfg x x0).
+pose proof Correctness9 as C9.
+specialize(C9 cfg x x0).
 intuition.
 exists x.
 trivial.
