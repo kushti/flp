@@ -61,9 +61,6 @@ Axiom RunCommutativity: forall cfg s1 s2, run (run cfg s1) s2 = run cfg (s1 ++ s
 Axiom RunCommutativity2: forall cfg step s, run (run cfg [step]) s = run cfg (step :: s).
 
 
-
-
-
 Lemma Termination1: forall cfg b s, decidedValue cfg b -> decidedValue (run cfg s) b.
 Proof.
 intros.
@@ -93,6 +90,7 @@ Definition bivalent(cfg:Configuration):= (~ decided cfg) /\
 
 (** "By the total correctness of P, and the fact that there are always admissible runs, V > 0" **)
 Axiom Correctness: forall cfg, bivalent cfg \/ univalent cfg.
+
 
 
 Lemma UnNotBiv: forall cfg, univalent cfg <-> ~ bivalent cfg.
@@ -279,12 +277,42 @@ Axiom Correctness6: forall cfg s, univalent_true cfg -> univalent_true (run cfg 
 Axiom Correctness7: forall cfg s, univalent_false cfg -> univalent_false (run cfg s).
 
 
-(** todo: prove ! **)
-Axiom Correctness8: forall cfg st s, univalent_false (run cfg (st :: s)) -> 
+Lemma Correctness8: forall cfg st s, univalent_false (run cfg (st :: s)) -> 
   bivalent (run cfg [st]) \/ univalent_false (run cfg [st]).
+Proof.
+intros.
+pose proof Correctness as C.
+specialize(C (run cfg [st])).
+unfold univalent in C.
+destruct C.
+tauto.
+pose proof Correctness5 as C5.
+specialize(C5 (run cfg [st]) s).
+intuition.
+pose proof RunCommutativity2 as RC2.
+specialize(RC2 cfg st s).
+rewrite RC2 in H0.
+tauto.
+Qed.
 
-(** todo: prove ! **)
-Axiom Correctness9: forall cfg st s, univalent_true (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_true (run cfg [st]).
+
+Lemma Correctness9: forall cfg st s, univalent_true (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_true (run cfg [st]).
+Proof.
+intros.
+pose proof Correctness as C.
+specialize(C (run cfg [st])).
+unfold univalent in C.
+destruct C.
+tauto.
+pose proof Correctness4 as C4.
+specialize(C4 (run cfg [st]) s).
+intuition.
+pose proof RunCommutativity2 as RC2.
+specialize(RC2 cfg st s).
+rewrite RC2 in H0.
+tauto.
+Qed.
+
 
 
 Axiom Async1: forall cfg step1 step2, (chooseFn cfg step1) <>  (chooseFn cfg step2) -> 
