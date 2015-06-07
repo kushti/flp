@@ -57,7 +57,8 @@ match s with
 end.  
 
 (** todo: proove? **)
-Axiom RunCommutativity: forall cfg step s, run (run cfg [step]) s = run cfg (step :: s).
+Axiom RunCommutativity: forall cfg s1 s2, run (run cfg s1) s2 = run cfg (s1 ++ s2).
+Axiom RunCommutativity2: forall cfg step s, run (run cfg [step]) s = run cfg (step :: s).
 
 
 Lemma Termination1: forall cfg b s, decidedValue cfg b -> decidedValue (run cfg s) b.
@@ -228,9 +229,34 @@ exists x0.
 trivial.
 Qed.
 
-(** todo: prove ? **)
-Axiom Correctness4: forall cfg s, univalent_false cfg -> ~ univalent_true (run cfg s).
-Axiom Correctness5: forall cfg s, univalent_true cfg -> ~ univalent_false (run cfg s).
+Lemma Correctness4: forall cfg s, univalent_false cfg -> ~ univalent_true (run cfg s).
+Proof.
+intros cfg s.
+unfold univalent_false.
+unfold univalent_true.
+intuition.
+destruct H.
+pose proof RunCommutativity as RC.
+specialize (RC cfg s x).
+rewrite RC in H.
+generalize dependent H.
+firstorder.
+Qed.
+
+
+Lemma Correctness5: forall cfg s, univalent_true cfg -> ~ univalent_false (run cfg s).
+Proof.
+intros cfg s.
+unfold univalent_false.
+unfold univalent_true.
+intuition.
+destruct H.
+pose proof RunCommutativity as RC.
+specialize (RC cfg s x).
+rewrite RC in H.
+generalize dependent H.
+firstorder.
+Qed.
 
 Axiom Correctness6: forall cfg s, univalent_true cfg -> univalent_true (run cfg s).
 Axiom Correctness7: forall cfg s, univalent_false cfg -> univalent_false (run cfg s).
@@ -241,6 +267,7 @@ Axiom Correctness8: forall cfg st s, univalent_false (run cfg (st :: s)) ->
 
 (** todo: prove ! **)
 Axiom Correctness9: forall cfg st s, univalent_true (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_true (run cfg [st]).
+
 
 Axiom Async1: forall cfg step1 step2, (chooseFn cfg step1) <>  (chooseFn cfg step2) -> 
   run cfg ([step1;step2]) = run cfg ([step2;step1]).
@@ -256,7 +283,7 @@ Lemma OneStepLemmaP1: forall cfg step1 step2,
     univalent_true (run cfg [step2])-> False.
 Proof.
 intuition.
-pose proof RunCommutativity as RC.
+pose proof RunCommutativity2 as RC.
 specialize(RC cfg).
 pose proof Async1 as A1.
 specialize(A1 cfg step1 step2).
@@ -283,7 +310,7 @@ specialize(P1 cfg step1 step2).
 tauto.
 Qed.
 
-(** todo: rename Message -> Step, step-> step **)
+
 Axiom AnotherProcessStepExists: forall cfg step, exists step0, chooseFn cfg step <> chooseFn cfg step0. 
 Parameter randomStep: Configuration -> nat.
 
