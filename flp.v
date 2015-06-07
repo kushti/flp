@@ -54,7 +54,7 @@ Fixpoint run (cfg:Configuration)(s:Schedule): Configuration :=
 match s with
 | nil => cfg
 | cons step t => eventFn (run cfg t) step
-end.  
+end.
 
 (** todo: proove? **)
 Axiom RunCommutativity: forall cfg s1 s2, run (run cfg s1) s2 = run cfg (s1 ++ s2).
@@ -90,6 +90,7 @@ Definition bivalent(cfg:Configuration):= (~ decided cfg) /\
 
 (** "By the total correctness of P, and the fact that there are always admissible runs, V > 0" **)
 Axiom Correctness: forall cfg, bivalent cfg \/ univalent cfg.
+
 
 
 Lemma UnNotBiv: forall cfg, univalent cfg <-> ~ bivalent cfg.
@@ -153,10 +154,24 @@ auto.
 Qed.
 
 
-(** todo: prove **)
-Axiom BivalentPaths2: forall cfg, bivalent cfg ->
+
+Lemma BivalentPaths2: forall cfg, bivalent cfg ->
   (exists st1 s1, univalent_false(run cfg (st1::s1))) /\ 
   (exists st2 s2, univalent_true(run cfg (st2::s2))).
+Proof.
+intros cfg.
+pose proof BivalentPaths as BP.
+specialize(BP cfg).
+intuition.
+destruct H1.
+destruct x.
+firstorder.
+firstorder.
+destruct H2.
+destruct x.
+firstorder.
+firstorder.
+Qed.
 
 
 
@@ -261,12 +276,43 @@ Qed.
 Axiom Correctness6: forall cfg s, univalent_true cfg -> univalent_true (run cfg s).
 Axiom Correctness7: forall cfg s, univalent_false cfg -> univalent_false (run cfg s).
 
-(** todo: prove ! **)
-Axiom Correctness8: forall cfg st s, univalent_false (run cfg (st :: s)) -> 
-  bivalent (run cfg [st]) \/ univalent_false (run cfg [st]).
 
-(** todo: prove ! **)
-Axiom Correctness9: forall cfg st s, univalent_true (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_true (run cfg [st]).
+Lemma Correctness8: forall cfg st s, univalent_false (run cfg (st :: s)) -> 
+  bivalent (run cfg [st]) \/ univalent_false (run cfg [st]).
+Proof.
+intros.
+pose proof Correctness as C.
+specialize(C (run cfg [st])).
+unfold univalent in C.
+destruct C.
+tauto.
+pose proof Correctness5 as C5.
+specialize(C5 (run cfg [st]) s).
+intuition.
+pose proof RunCommutativity2 as RC2.
+specialize(RC2 cfg st s).
+rewrite RC2 in H0.
+tauto.
+Qed.
+
+
+Lemma Correctness9: forall cfg st s, univalent_true (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_true (run cfg [st]).
+Proof.
+intros.
+pose proof Correctness as C.
+specialize(C (run cfg [st])).
+unfold univalent in C.
+destruct C.
+tauto.
+pose proof Correctness4 as C4.
+specialize(C4 (run cfg [st]) s).
+intuition.
+pose proof RunCommutativity2 as RC2.
+specialize(RC2 cfg st s).
+rewrite RC2 in H0.
+tauto.
+Qed.
+
 
 
 Axiom Async1: forall cfg step1 step2, (chooseFn cfg step1) <>  (chooseFn cfg step2) -> 
