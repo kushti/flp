@@ -51,7 +51,7 @@ Parameter eventFn : Configuration -> nat -> Configuration.
 
 
 (** There's no change in deciding value **)
-Axiom Termination: forall cfg b msg, decidedValue cfg b -> decidedValue (eventFn cfg msg) b.
+Axiom Termination: forall cfg b step, decidedValue cfg b -> decidedValue (eventFn cfg step) b.
 
 
 Fixpoint run (cfg:Configuration)(s:Schedule): Configuration :=
