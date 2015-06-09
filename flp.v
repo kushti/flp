@@ -1,8 +1,12 @@
 (** FLP Impossibility Proof **)
 (** Made after original paper http://cs-www.cs.yale.edu/homes/arvind/cs425/doc/fischer.pdf **) 
 (** described more informally in the awesome blogpost http://the-paper-trail.org/blog/a-brief-tour-of-flp-impossibility/ **)
-(** also constructive proofs: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.221.7907&rep=rep1&type=pdf **)
+(** Some constructive proofs existed before, e. g. **)
+(** http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.221.7907&rep=rep1&type=pdf **)
 (** and http://www.cs.cornell.edu/courses/cs7412/2011sp/ConsensusRebecca.pdf **)
+
+(** Unlike previous constructive proofs, this one has the same model as the original paper **)
+(** But instead of Lemma3, it has own constructive small-step proof of bivalent run existence **)
 
 Require Import Arith.
 Require Import List.
@@ -13,8 +17,8 @@ Import ListNotations.
 
 Definition Binary := bool.
 
-Inductive Process: Set := 
-| FinishedProcess: Binary -> Process
+Inductive Process := 
+| FinishedProcess: Binary -> Process 
 | proceed: nat -> Process. 
 
 
@@ -33,6 +37,7 @@ Definition decided(cfg:Configuration):Prop := decidedValue cfg true \/ decidedVa
 Axiom Consistency: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
 
 
+
 (** A particular execution, defined by a possibly infinite sequence of events from 
 a starting configuration C is called a schedule and the sequence of steps taken 
 to realise the schedule is a run **)
@@ -40,7 +45,6 @@ Definition Schedule := list nat.
 
 
 Parameter chooseFn : Configuration -> nat -> Process.
-
 
 (** Configuration transition function **)
 Parameter eventFn : Configuration -> nat -> Configuration.
