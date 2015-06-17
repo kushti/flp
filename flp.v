@@ -20,7 +20,7 @@ Definition Binary := bool.
 (** "Processes are modeled as automata (with possibly infinitely many states)" 
     For our purposes it's enough to enumerate states with some natural numbers, 
 encoding process identificator within a number as well, so there's bidirectional 
-injective mapping (process_id, state) -> nat **) 
+injective mapping (process_id, state) <-> nat **) 
 
 Definition Process := nat. 
 

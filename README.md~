@@ -13,19 +13,17 @@ but this is the first with source code published! Also proof of lemma3 is differ
 
 Messages are skipped at all(so they are needed for better understanding only, while for proof's sake we can have a talk only about system's state transitions).
 
-Process is an automata in the original paper. For our purposes it's enough to enumerate states with some natural numbers, 
-encoding process identificator within a number as well, so there's bidirectional injective mapping (process_id, state) <-> nat.
+Process is the inductive set:
 
-`Definition Process := nat.`
+`Inductive Process := | FinishedProcess: Binary -> Process | proceed: nat -> Process.`
 
 then configuration is just a list of processes:
 
 `Definition Configuration := list Process.`
 
-Events are enumerated with natural numbers as well, with two (abstract) functions for transition from one configuration to another, and to choose process by event:
+Events are enumerated with naturals numbers, with two (abstract) functions for transition from one configuration to another, and to choose process by event:
 
-`Parameter eventFn : Configuration -> nat -> Configuration.` 
-`Parameter chooseFn : Configuration -> nat -> Process.`
+`Parameter eventFn : Configuration -> nat -> Configuration. Parameter chooseFn : Configuration -> nat -> Process.`
 
 We can compare processes by using chooseFn:
 
@@ -41,7 +39,7 @@ Other axioms are following original paper pretty directly:
 
 * Partially correct protocol could decides on a single value only: 
 
-`Axiom Agreement: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).`
+`Axiom Consistency: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).`
   
     
 
