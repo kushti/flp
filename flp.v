@@ -17,25 +17,23 @@ Import ListNotations.
 
 Definition Binary := bool.
 
-Inductive Process := 
-| FinishedProcess: Binary -> Process 
-| proceed: nat -> Process. 
+(** "Processes are modeled as automata (with possibly infinitely many states)" 
+    For our purposes it's enough to enumerate states with some natural numbers, 
+encoding process identificator within a number as well, so there's bidirectional 
+injective mapping (process_id, state) -> nat **) 
 
-
-Definition finishedIn(b:Binary)(p:Process):bool := match p with
-| FinishedProcess b => true
-| _ => false
-end.
+Definition Process := nat. 
 
 Definition Configuration := list Process.
 
-Definition decidedValue(cfg:Configuration)(b:Binary):Prop := In (FinishedProcess b) cfg.
+(** Abstract function returning True if some process(es) in configuration reached 
+final state associated with given binary value **)
+Parameter decidedValue: Configuration -> Binary -> Prop.
 
 Definition decided(cfg:Configuration):Prop := decidedValue cfg true \/ decidedValue cfg false.
 
-
-Axiom Consistency: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
-
+(** No two processes decide differently **)
+Axiom Agreement: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
 
 
 (** A particular execution, defined by a possibly infinite sequence of events from 
@@ -60,9 +58,12 @@ match s with
 | cons step t => eventFn (run cfg t) step
 end.
 
+
+Axiom RunCommutativity2: forall cfg step s, run (run cfg [step]) s = run cfg (step :: s).
+
 (** todo: proove? **)
 Axiom RunCommutativity: forall cfg s1 s2, run (run cfg s1) s2 = run cfg (s1 ++ s2).
-Axiom RunCommutativity2: forall cfg step s, run (run cfg [step]) s = run cfg (step :: s).
+
 
 
 Lemma Termination1: forall cfg b s, decidedValue cfg b -> decidedValue (run cfg s) b.
@@ -128,7 +129,7 @@ Lemma BivalentPaths: forall cfg, bivalent cfg ->
   (exists s2, univalent_true(run cfg (s2))).
 Proof.
 intros cfg.
-pose proof Consistency as C.
+pose proof Agreement as A.
 pose proof Termination1 as T.
 unfold bivalent. unfold univalent_false. unfold univalent_true.
 intuition.
@@ -143,7 +144,7 @@ destruct H2.
 specialize(T x1).
 intuition.
 generalize dependent H2. generalize dependent H3.
-specialize (C (run (run cfg x) x1)).
+specialize (A (run (run cfg x) x1)).
 tauto.
 destruct H.
 destruct H2.
@@ -153,7 +154,7 @@ intuition.
 exists [].
 trivial.
 destruct H2.
-specialize (C (run (run cfg x0) x1)).
+specialize (A (run (run cfg x0) x1)).
 auto.
 Qed.
 
