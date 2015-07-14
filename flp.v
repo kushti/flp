@@ -36,26 +36,28 @@ Definition decided(cfg:Configuration):Prop := decidedValue cfg true \/ decidedVa
 Axiom Agreement: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
 
 
+Definition Step := nat.
+
 (** A particular execution, defined by a possibly infinite sequence of events from 
 a starting configuration C is called a schedule and the sequence of steps taken 
 to realise the schedule is a run **)
-Definition Schedule := list nat.
+Definition Schedule := list Step.
 
 
-Parameter chooseFn : Configuration -> nat -> Process.
+Parameter chooseFn : Configuration -> Step -> Process.
 
 (** Configuration transition function **)
-Parameter eventFn : Configuration -> nat -> Configuration.
+Parameter stepFn : Configuration -> Step -> Configuration.
 
 
 (** There's no change in deciding value **)
-Axiom Termination: forall cfg b step, decidedValue cfg b -> decidedValue (eventFn cfg step) b.
+Axiom Termination: forall cfg b step, decidedValue cfg b -> decidedValue (stepFn cfg step) b.
 
 
 Fixpoint run (cfg:Configuration)(s:Schedule): Configuration :=
 match s with
 | nil => cfg
-| cons step t => eventFn (run cfg t) step
+| cons step t => stepFn (run cfg t) step
 end.
 
 
@@ -363,7 +365,7 @@ Qed.
 
 
 Axiom AnotherProcessStepExists: forall cfg step, exists step0, chooseFn cfg step <> chooseFn cfg step0. 
-Parameter randomStep: Configuration -> nat.
+Parameter randomStep: Configuration -> Step.
 
 
 Lemma BivNotUnTAndUnF: forall cfg, bivalent cfg <-> ~ univalent_true cfg /\ ~ univalent_false cfg.
@@ -407,7 +409,7 @@ Qed.
 it must be bivalent as proven by the OtherBivalent lemma **)
 
 Lemma OneStepLemmaP3: forall cfg step1 step2, univalent_true (run cfg [step1]) /\ univalent_false (run cfg [step2]) -> 
-  exists step: nat, bivalent (run cfg [step]).  
+  exists step: Step, bivalent (run cfg [step]).  
 Proof.
 intros.
 pose proof OneStepLemmaP2 as P2.
