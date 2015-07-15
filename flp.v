@@ -44,7 +44,7 @@ to realise the schedule is a run **)
 Definition Schedule := list Step.
 
 
-Parameter chooseFn : Configuration -> Step -> Process.
+Parameter processId : Step -> Process.
 
 (** Configuration transition function **)
 Parameter stepFn : Configuration -> Step -> Configuration.
@@ -322,16 +322,13 @@ Qed.
 
 
 
-Axiom Async1: forall cfg step1 step2, (chooseFn cfg step1) <>  (chooseFn cfg step2) -> 
+Axiom Async1: forall cfg step1 step2, (processId step1) <>  (processId step2) -> 
   run cfg ([step1;step2]) = run cfg ([step2;step1]).
 
-
-
-Axiom Decidability: forall cfg n1 n2, chooseFn cfg n1 = chooseFn cfg n2 \/ chooseFn cfg n1 <> chooseFn cfg n2.
-
+Axiom Decidability: forall step1 step2, processId step1 = processId step2 \/ processId step1 <> processId step2.
 
 Lemma OneStepLemmaP1: forall cfg step1 step2, 
-  chooseFn cfg step1 <> chooseFn cfg step2 /\ 
+  processId step1 <> processId step2 /\ 
     univalent_false (run cfg [step1]) /\
     univalent_true (run cfg [step2])-> False.
 Proof.
@@ -355,7 +352,7 @@ Qed.
 
 Lemma OneStepLemmaP2: forall cfg step1 step2,  
     univalent_false (run cfg [step1]) /\
-    univalent_true (run cfg [step2]) -> chooseFn cfg step1 = chooseFn cfg step2.
+    univalent_true (run cfg [step2]) -> processId step1 = processId step2.
 Proof.
 intros cfg step1 step2.
 pose proof OneStepLemmaP1 as P1.
@@ -364,7 +361,7 @@ tauto.
 Qed.
 
 
-Axiom AnotherProcessStepExists: forall cfg step, exists step0, chooseFn cfg step <> chooseFn cfg step0. 
+Axiom AnotherProcessStepExists: forall step, exists step0, processId step <> processId step0. 
 Parameter randomStep: Configuration -> Step.
 
 
@@ -386,9 +383,9 @@ unfold univalent.
 tauto.
 Qed.
 
-Lemma OtherBivalent: forall cfg step1 step2, (chooseFn cfg step1 = chooseFn cfg step2 /\ 
+Lemma OtherBivalent: forall cfg step1 step2, (processId step1 = processId step2 /\ 
   univalent_true (run cfg [step1]) /\ univalent_false (run cfg [step2])) -> 
-  forall step, chooseFn cfg step <> chooseFn cfg step1 -> bivalent (run cfg [step]).
+  forall step, processId step <> processId step1 -> bivalent (run cfg [step]).
 Proof.
 intuition.
 apply BivNotUn.
@@ -415,7 +412,7 @@ intros.
 pose proof OneStepLemmaP2 as P2.
 specialize(P2 cfg step2 step1).
 intuition.
-assert(AP := AnotherProcessStepExists cfg step1).
+assert(AP := AnotherProcessStepExists step1).
 destruct AP.
 pose proof OtherBivalent as OB.
 specialize (OB cfg step1 step2).
