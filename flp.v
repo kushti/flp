@@ -38,19 +38,6 @@ Definition decided(cfg:Configuration):Prop := decidedValue cfg true \/ decidedVa
 Axiom Agreement: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
 
 
-(** Parameter Step: Configuration -> ProcessId -> Configuration. **)
-
-(** A particular execution, defined by a possibly infinite sequence of events from 
-a starting configuration C is called a schedule and the sequence of steps taken 
-to realise the schedule is a run **)
-
-(**
-Fixpoint Schedule(cfg:Configuration)(steps:list ProcessId):Configuration := 
-match steps with
-| nil = > cfg 
-| cons => list Step. **)
-
-
 (** Process ID is nat **) 
 Parameter processId : ProcessState -> ProcessId.
 
@@ -62,6 +49,9 @@ Parameter stepFn : Configuration -> ProcessId -> Configuration.
 Axiom Termination: forall cfg b prcId, decidedValue cfg b -> decidedValue (stepFn cfg prcId) b.
 
 
+(** A particular execution, defined by a possibly infinite sequence of events from 
+a starting configuration C is called a schedule and the sequence of steps taken 
+to realise the schedule is a run **)
 Fixpoint run (cfg:Configuration)(s:list ProcessId): Configuration :=
 match s with
 | nil => cfg
