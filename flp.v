@@ -38,9 +38,6 @@ Definition decided(cfg:Configuration):Prop := decidedValue cfg true \/ decidedVa
 Axiom Agreement: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
 
 
-(** Process ID is nat **) 
-Parameter processId : ProcessState -> ProcessId.
-
 (** Configuration transition function **)
 Parameter stepFn : Configuration -> ProcessId -> Configuration.
 
