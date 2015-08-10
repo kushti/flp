@@ -435,14 +435,14 @@ Qed.
 Theorem OneStepLemma: forall cfg, bivalent cfg -> exists p, bivalent (run cfg [p]).
 Proof.
 intros.
-assert(S := randomStep cfg).
+assert(rp := randomStep cfg).
 pose proof Correctness as C.
-specialize(C (run cfg [S])). 
+specialize(C (run cfg [rp])). 
 intuition. 
-(** CASE: bivalent (run cfg [S]) **)
-exists S.
+(** CASE: bivalent (run cfg [rp]) **)
+exists rp.
 assumption.
-(** CASE: bivalent (run cfg [S])  proven **)
+(** CASE: bivalent (run cfg [rp])  proven **)
 unfold univalent in H0.
 pose proof BivalentPaths2 as B2.
 specialize(B2 cfg).
@@ -460,10 +460,10 @@ intuition.
 exists x.
 trivial.
 pose proof OneStepLemmaP3 as P3.
-specialize(P3 cfg S x).
+specialize(P3 cfg rp x).
 tauto.
 
-(** CASE: univalent_false (run cfg [S]) - symmetrical to previous **)
+(** CASE: univalent_false (run cfg [rp]) - symmetrical to previous **)
 intuition.
 destruct H3.
 destruct H1.
@@ -473,7 +473,7 @@ intuition.
 exists x.
 trivial.
 pose proof OneStepLemmaP3 as P3.
-specialize(P3 cfg x S).
+specialize(P3 cfg x rp).
 tauto.
 Qed.
 
