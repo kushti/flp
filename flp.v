@@ -24,7 +24,7 @@ injective mapping (process_id, state) <-> nat **)
 
 Definition ProcessState := nat. 
 
-Definition ProcessId := nat. 
+Parameter ProcessId: Set.
 
 Definition Configuration := list ProcessState.
 
