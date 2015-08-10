@@ -22,9 +22,11 @@ Definition Binary := bool.
 encoding process identificator within a number as well, so there's bidirectional 
 injective mapping (process_id, state) <-> nat **) 
 
-Definition Process := nat. 
+Definition ProcessState := nat. 
 
-Definition Configuration := list Process.
+Definition ProcessId := nat. 
+
+Definition Configuration := list ProcessState.
 
 (** Abstract function returning True if some process(es) in configuration reached 
 final state associated with given binary value **)
@@ -36,51 +38,57 @@ Definition decided(cfg:Configuration):Prop := decidedValue cfg true \/ decidedVa
 Axiom Agreement: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
 
 
-Definition Step := nat.
+(** Parameter Step: Configuration -> ProcessId -> Configuration. **)
 
 (** A particular execution, defined by a possibly infinite sequence of events from 
 a starting configuration C is called a schedule and the sequence of steps taken 
 to realise the schedule is a run **)
-Definition Schedule := list Step.
+
+(**
+Fixpoint Schedule(cfg:Configuration)(steps:list ProcessId):Configuration := 
+match steps with
+| nil = > cfg 
+| cons => list Step. **)
 
 
-Parameter processId : Step -> Process.
+(** Process ID is nat **) 
+Parameter processId : ProcessState -> ProcessId.
 
 (** Configuration transition function **)
-Parameter stepFn : Configuration -> Step -> Configuration.
+Parameter stepFn : Configuration -> ProcessId -> Configuration.
 
 
 (** There's no change in deciding value **)
-Axiom Termination: forall cfg b step, decidedValue cfg b -> decidedValue (stepFn cfg step) b.
+Axiom Termination: forall cfg b prcId, decidedValue cfg b -> decidedValue (stepFn cfg prcId) b.
 
 
-Fixpoint run (cfg:Configuration)(s:Schedule): Configuration :=
+Fixpoint run (cfg:Configuration)(s:list ProcessId): Configuration :=
 match s with
 | nil => cfg
 | cons step t => stepFn (run cfg t) step
 end.
 
 
-Axiom RunCommutativity2: forall cfg step s, run (run cfg [step]) s = run cfg (step :: s).
+Axiom RunCommutativity2: forall cfg prcId s, run (run cfg [prcId]) s = run cfg (prcId :: s).
 
 (** todo: proove? **)
 Axiom RunCommutativity: forall cfg s1 s2, run (run cfg s1) s2 = run cfg (s1 ++ s2).
 
 
 
-Lemma Termination1: forall cfg b s, decidedValue cfg b -> decidedValue (run cfg s) b.
+Lemma Termination1: forall cfg b ps, decidedValue cfg b -> decidedValue (run cfg ps) b.
 Proof.
 intros.
 pose proof Termination as T.
 unfold run.
-induction s.
+induction ps.
 trivial.
 auto.
 Qed.
 
 (** We say that a run is deciding provided that some process eventually decides according 
 to the properties of consensus **)
-Definition deciding(cfg:Configuration)(s:Schedule): Prop := decided (run cfg s).
+Definition deciding(cfg:Configuration)(ps:list ProcessId): Prop := decided (run cfg ps).
 
 
 Definition univalent_true(cfg:Configuration):= 
@@ -127,8 +135,8 @@ Qed.
 
 
 Lemma BivalentPaths: forall cfg, bivalent cfg ->
-  (exists s1, univalent_false(run cfg (s1))) /\ 
-  (exists s2, univalent_true(run cfg (s2))).
+  (exists ps1, univalent_false(run cfg (ps1))) /\ 
+  (exists ps2, univalent_true(run cfg (ps2))).
 Proof.
 intros cfg.
 pose proof Agreement as A.
@@ -163,8 +171,8 @@ Qed.
 
 
 Lemma BivalentPaths2: forall cfg, bivalent cfg ->
-  (exists st1 s1, univalent_false(run cfg (st1::s1))) /\ 
-  (exists st2 s2, univalent_true(run cfg (st2::s2))).
+  (exists pid1 ps1, univalent_false(run cfg (pid1::ps1))) /\ 
+  (exists pid2 ps2, univalent_true(run cfg (pid2::ps2))).
 Proof.
 intros cfg.
 pose proof BivalentPaths as BP.
@@ -251,118 +259,123 @@ exists x0.
 trivial.
 Qed.
 
-Lemma Correctness4: forall cfg s, univalent_false cfg -> ~ univalent_true (run cfg s).
+Lemma Correctness4: forall cfg ps, univalent_false cfg -> ~ univalent_true (run cfg ps).
 Proof.
-intros cfg s.
+intros cfg ps.
 unfold univalent_false.
 unfold univalent_true.
 intuition.
 destruct H.
 pose proof RunCommutativity as RC.
-specialize (RC cfg s x).
+specialize (RC cfg ps x).
 rewrite RC in H.
 generalize dependent H.
 firstorder.
 Qed.
 
 
-Lemma Correctness5: forall cfg s, univalent_true cfg -> ~ univalent_false (run cfg s).
+Lemma Correctness5: forall cfg ps, univalent_true cfg -> ~ univalent_false (run cfg ps).
 Proof.
-intros cfg s.
+intros cfg ps.
 unfold univalent_false.
 unfold univalent_true.
 intuition.
 destruct H.
 pose proof RunCommutativity as RC.
-specialize (RC cfg s x).
+specialize (RC cfg ps x).
 rewrite RC in H.
 generalize dependent H.
 firstorder.
 Qed.
 
-Axiom Correctness6: forall cfg s, univalent_true cfg -> univalent_true (run cfg s).
-Axiom Correctness7: forall cfg s, univalent_false cfg -> univalent_false (run cfg s).
+Axiom Correctness6: forall cfg ps, univalent_true cfg -> univalent_true (run cfg ps).
+Axiom Correctness7: forall cfg ps, univalent_false cfg -> univalent_false (run cfg ps).
 
 
-Lemma Correctness8: forall cfg st s, univalent_false (run cfg (st :: s)) -> 
-  bivalent (run cfg [st]) \/ univalent_false (run cfg [st]).
+Lemma Correctness8: forall cfg pid ps, univalent_false (run cfg (pid :: ps)) -> 
+  bivalent (run cfg [pid]) \/ univalent_false (run cfg [pid]).
 Proof.
 intros.
 pose proof Correctness as C.
-specialize(C (run cfg [st])).
+specialize(C (run cfg [pid])).
 unfold univalent in C.
 destruct C.
 tauto.
 pose proof Correctness5 as C5.
-specialize(C5 (run cfg [st]) s).
+specialize(C5 (run cfg [pid]) ps).
 intuition.
 pose proof RunCommutativity2 as RC2.
-specialize(RC2 cfg st s).
+specialize(RC2 cfg pid ps).
 rewrite RC2 in H0.
 tauto.
 Qed.
 
 
-Lemma Correctness9: forall cfg st s, univalent_true (run cfg (st :: s)) -> bivalent (run cfg [st]) \/ univalent_true (run cfg [st]).
+Lemma Correctness9: forall cfg pid ps, univalent_true (run cfg (pid :: ps)) -> bivalent (run cfg [pid]) \/ univalent_true (run cfg [pid]).
 Proof.
 intros.
 pose proof Correctness as C.
-specialize(C (run cfg [st])).
+specialize(C (run cfg [pid])).
 unfold univalent in C.
 destruct C.
 tauto.
 pose proof Correctness4 as C4.
-specialize(C4 (run cfg [st]) s).
+specialize(C4 (run cfg [pid]) ps).
 intuition.
 pose proof RunCommutativity2 as RC2.
-specialize(RC2 cfg st s).
+specialize(RC2 cfg pid ps).
 rewrite RC2 in H0.
 tauto.
 Qed.
 
 
 
-Axiom Async1: forall cfg step1 step2, (processId step1) <>  (processId step2) -> 
-  run cfg ([step1;step2]) = run cfg ([step2;step1]).
+Axiom Async1: forall cfg pid1 pid2, pid1 <>  pid2 -> 
+  run cfg ([pid1;pid2]) = run cfg ([pid2;pid1]).
 
-Axiom Decidability: forall step1 step2, processId step1 = processId step2 \/ processId step1 <> processId step2.
+(**todo: remove
+Axiom Decidability: forall pid1 pid2, pid1 = pid2 \/ pid1 <> pid2.
+**)
 
-Lemma OneStepLemmaP1: forall cfg step1 step2, 
-  processId step1 <> processId step2 /\ 
-    univalent_false (run cfg [step1]) /\
-    univalent_true (run cfg [step2])-> False.
+Lemma OneStepLemmaP1: forall cfg pid1 pid2, 
+  pid1 <> pid2 /\ 
+    univalent_false (run cfg [pid1]) /\
+    univalent_true (run cfg [pid2])-> False.
 Proof.
 intuition.
 pose proof RunCommutativity2 as RC.
 specialize(RC cfg).
 pose proof Async1 as A1.
-specialize(A1 cfg step1 step2).
+specialize(A1 cfg pid1 pid2).
 pose proof Correctness6 as C6.
 pose proof Correctness7 as C7.
-specialize (C6 (run cfg [step2]) [step1]).
+specialize (C6 (run cfg [pid2]) [pid1]).
 rewrite RC in C6.
-specialize (C7 (run cfg [step1]) [step2]).
+specialize (C7 (run cfg [pid1]) [pid2]).
 rewrite RC in C7.
 intuition.
 rewrite H1 in H3.
 pose proof Correctness3 as C3.
-specialize(C3 (run cfg [step2; step1])).
+specialize(C3 (run cfg [pid2; pid1])).
 tauto.
 Qed.
 
-Lemma OneStepLemmaP2: forall cfg step1 step2,  
-    univalent_false (run cfg [step1]) /\
-    univalent_true (run cfg [step2]) -> processId step1 = processId step2.
+Lemma OneStepLemmaP2: forall cfg pid1 pid2,  
+    univalent_false (run cfg [pid1]) /\
+    univalent_true (run cfg [pid2]) -> pid1 = pid2.
 Proof.
-intros cfg step1 step2.
+intros cfg p1 p2.
 pose proof OneStepLemmaP1 as P1.
-specialize(P1 cfg step1 step2).
+specialize(P1 cfg p1 p2).
 tauto.
 Qed.
 
 
-Axiom AnotherProcessStepExists: forall step, exists step0, processId step <> processId step0. 
-Parameter randomStep: Configuration -> Step.
+(*Axiom AnotherProcessStepExists: forall pid1, exists pid2, pid1 <> pid2. *)
+
+Parameter randomStep: Configuration -> ProcessId.
+Parameter anotherProcess: Configuration -> ProcessId -> ProcessId.
+Axiom AnotherProcessStepExists: forall cfg p1, anotherProcess cfg p1 <> p1.
 
 
 Lemma BivNotUnTAndUnF: forall cfg, bivalent cfg <-> ~ univalent_true cfg /\ ~ univalent_false cfg.
@@ -383,9 +396,9 @@ unfold univalent.
 tauto.
 Qed.
 
-Lemma OtherBivalent: forall cfg step1 step2, (processId step1 = processId step2 /\ 
-  univalent_true (run cfg [step1]) /\ univalent_false (run cfg [step2])) -> 
-  forall step, processId step <> processId step1 -> bivalent (run cfg [step]).
+Lemma OtherBivalent: forall cfg p1 p2, (p1 = p2 /\ 
+  univalent_true (run cfg [p1]) /\ univalent_false (run cfg [p2])) -> 
+  forall p, p <> p1 -> bivalent (run cfg [p]).
 Proof.
 intuition.
 apply BivNotUn.
@@ -393,11 +406,11 @@ unfold univalent.
 pose proof OneStepLemmaP1 as P1.
 intuition.
 (** CASE : univalent_true (run cfg [step]) **)
-assert(P1T := P1 cfg step2 step).
+assert(P1T := P1 cfg p2 p).
 rewrite H0 in H1.
 auto.
 (** CASE : univalent_false (run cfg [step]) **)
-assert(P1H := P1 cfg step step1).
+assert(P1H := P1 cfg p p1).
 auto.
 Qed. 
 
@@ -405,29 +418,31 @@ Qed.
 (** only the same process could goes to univalent_true & univalent_false states, so we choose another process and
 it must be bivalent as proven by the OtherBivalent lemma **)
 
-Lemma OneStepLemmaP3: forall cfg step1 step2, univalent_true (run cfg [step1]) /\ univalent_false (run cfg [step2]) -> 
-  exists step: Step, bivalent (run cfg [step]).  
+Lemma OneStepLemmaP3: forall cfg p1 p2, univalent_true (run cfg [p1]) /\ univalent_false (run cfg [p2]) -> 
+  exists p: ProcessId, bivalent (run cfg [p]).  
 Proof.
 intros.
 pose proof OneStepLemmaP2 as P2.
-specialize(P2 cfg step2 step1).
+specialize(P2 cfg p2 p1).
 intuition.
-assert(AP := AnotherProcessStepExists step1).
-destruct AP.
+pose proof AnotherProcessStepExists as APSE.
+specialize(APSE cfg p1).
+intuition.
 pose proof OtherBivalent as OB.
-specialize (OB cfg step1 step2).
+specialize (OB cfg p2 p1).
 intuition.
-rewrite H in H3.
+rewrite H in H2.
+rewrite H in H1.
 intuition.
-specialize(H3 x).
+specialize(H2 (anotherProcess cfg p1)).
 intuition.
-exists x.
+exists (anotherProcess cfg p1).
 assumption.
 Qed.
 
 (** The main lemma, named OneStepLemma after Constable's paper **)
 
-Theorem OneStepLemma: forall cfg, bivalent cfg -> exists step, bivalent (run cfg [step]).
+Theorem OneStepLemma: forall cfg, bivalent cfg -> exists p, bivalent (run cfg [p]).
 Proof.
 intros.
 assert(S := randomStep cfg).
