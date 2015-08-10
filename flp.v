@@ -5,8 +5,8 @@
 (** http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.221.7907&rep=rep1&type=pdf **)
 (** and http://www.cs.cornell.edu/courses/cs7412/2011sp/ConsensusRebecca.pdf **)
 
-(** Unlike previous constructive proofs, this one has the same model as the original paper **)
-(** But instead of Lemma3, it has own constructive small-step proof of bivalent run existence **)
+(** Unlike previous proofs, this one has the same model as the original paper **)
+(** But instead of Lemma3, it has own constructive small-step proof of a bivalent run existence **)
 
 Require Import Arith.
 Require Import List.
@@ -448,7 +448,7 @@ pose proof BivalentPaths2 as B2.
 specialize(B2 cfg).
 destruct H0.
 
-(** CASE: univalent_true (run cfg [S]) - follow univalent_false path then if processes are different **)
+(** CASE: univalent_true (run cfg [rp]) - follow univalent_false path then if processes are different **)
 intuition.
 destruct H2.
 (** if there are some steps before entering univalent_false, enter first one if processes are different or step
