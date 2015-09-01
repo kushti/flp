@@ -1,4 +1,8 @@
 (** FLP Impossibility Proof **)
+
+(** Done by Alexander Chepurnoy **)
+(** Public domain **)
+
 (** Made after original paper http://cs-www.cs.yale.edu/homes/arvind/cs425/doc/fischer.pdf **) 
 (** described more informally in the awesome blogpost http://the-paper-trail.org/blog/a-brief-tour-of-flp-impossibility/ **)
 (** Some constructive proofs existed before, e. g. **)
