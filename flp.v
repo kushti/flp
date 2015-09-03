@@ -351,9 +351,9 @@ specialize(C3 (run cfg [pid2; pid1])).
 tauto.
 Qed.
 
-Lemma OneStepLemmaP2: forall cfg pid1 pid2,  
-    univalent_false (run cfg [pid1]) /\
-    univalent_true (run cfg [pid2]) -> pid1 = pid2.
+Lemma Lemma1: forall cfg p1 p2,  
+    univalent_false (run cfg [p1]) /\
+    univalent_true (run cfg [p2]) -> p1 = p2.
 Proof.
 intros cfg p1 p2.
 pose proof OneStepLemmaP1 as P1.
@@ -387,7 +387,7 @@ unfold univalent.
 tauto.
 Qed.
 
-Lemma OtherBivalent: forall cfg p1 p2, (p1 = p2 /\ 
+Lemma Lemma2: forall cfg p1 p2, (p1 = p2 /\ 
   univalent_true (run cfg [p1]) /\ univalent_false (run cfg [p2])) -> 
   forall p, p <> p1 -> bivalent (run cfg [p]).
 Proof.
@@ -406,20 +406,20 @@ auto.
 Qed. 
 
 
-(** only the same process could goes to univalent_true & univalent_false states, so we choose another process and
+(** only the same process could goes to univalent_true & univalent_false states, so if we choose another process
 it must be bivalent as proven by the OtherBivalent lemma **)
 
 Lemma OneStepLemmaP3: forall cfg p1 p2, univalent_true (run cfg [p1]) /\ univalent_false (run cfg [p2]) -> 
   exists p: ProcessId, bivalent (run cfg [p]).  
 Proof.
 intros.
-pose proof OneStepLemmaP2 as P2.
+pose proof Lemma1 as P2.
 specialize(P2 cfg p2 p1).
 intuition.
 pose proof AnotherProcessStepExists as APSE.
 specialize(APSE cfg p1).
 intuition.
-pose proof OtherBivalent as OB.
+pose proof Lemma2 as OB.
 specialize (OB cfg p2 p1).
 intuition.
 rewrite H in H2.
@@ -433,7 +433,7 @@ Qed.
 
 (** The main lemma, named OneStepLemma after Constable's paper **)
 
-Theorem OneStepLemma: forall cfg, bivalent cfg -> exists p, bivalent (run cfg [p]).
+Lemma Lemma3: forall cfg, bivalent cfg -> exists p, bivalent (run cfg [p]).
 Proof.
 intros.
 assert(rp := randomStep cfg).
@@ -484,7 +484,7 @@ process & event considered **)
 Theorem FLP_Lemma3: forall cfg, bivalent cfg -> forall m, exists s, length s > m -> bivalent (run cfg s).
 Proof.
 intros. 
-pose proof OneStepLemma as O. 
+pose proof Lemma3 as O. 
 specialize (O cfg).
 intuition.
 destruct H0.
