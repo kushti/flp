@@ -77,10 +77,6 @@ trivial.
 auto.
 Qed.
 
-(** We say that a run is deciding provided that some process eventually decides according 
-to the properties of consensus **)
-Definition deciding(cfg:Configuration)(ps:list ProcessId): Prop := decided (run cfg ps).
-
 
 Definition univalent_true(cfg:Configuration):= 
   (exists s1, decidedValue(run cfg s1) true) /\ ~(exists s2, decidedValue (run cfg s2) false).
@@ -283,8 +279,7 @@ Axiom Correctness6: forall cfg ps, univalent_true cfg -> univalent_true (run cfg
 Axiom Correctness7: forall cfg ps, univalent_false cfg -> univalent_false (run cfg ps).
 
 
-Lemma Correctness8: forall cfg pid ps, univalent_false (run cfg (pid :: ps)) -> 
-  bivalent (run cfg [pid]) \/ univalent_false (run cfg [pid]).
+Lemma Lemma3: forall cfg pid ps, univalent_false (run cfg (pid :: ps)) -> bivalent (run cfg [pid]) \/ univalent_false (run cfg [pid]).
 Proof.
 intros.
 pose proof Correctness as C.
@@ -433,17 +428,19 @@ Qed.
 
 (** The main lemma, named OneStepLemma after Constable's paper **)
 
-Lemma Lemma3: forall cfg, bivalent cfg -> exists p, bivalent (run cfg [p]).
+Lemma Lemma4: forall cfg, bivalent cfg -> exists p, bivalent (run cfg [p]).
 Proof.
 intros.
 assert(rp := randomStep cfg).
 pose proof Correctness as C.
 specialize(C (run cfg [rp])). 
 intuition. 
+
 (** CASE: bivalent (run cfg [rp]) **)
 exists rp.
 assumption.
-(** CASE: bivalent (run cfg [rp])  proven **)
+(** --CASE: bivalent (run cfg [rp])  proven **)
+
 unfold univalent in H0.
 pose proof BivalentPaths2 as B2.
 specialize(B2 cfg).
@@ -455,7 +452,7 @@ destruct H2.
 (** if there are some steps before entering univalent_false, enter first one if processes are different or step
 with other process (it should be bivalent if protocol is partially correct) **)
 destruct H1.
-pose proof Correctness8 as C8.
+pose proof Lemma3 as C8.
 specialize(C8 cfg x x0).
 intuition.
 exists x.
@@ -481,10 +478,10 @@ Qed.
 (** Not strictly corresponding to the original paper, as there's no any 
 process & event considered **)
 
-Theorem FLP_Lemma3: forall cfg, bivalent cfg -> forall m, exists s, length s > m -> bivalent (run cfg s).
+Theorem FLP_Lemma4: forall cfg, bivalent cfg -> forall m, exists s, length s > m -> bivalent (run cfg s).
 Proof.
 intros. 
-pose proof Lemma3 as O. 
+pose proof Lemma4 as O. 
 specialize (O cfg).
 intuition.
 destruct H0.
@@ -516,17 +513,20 @@ Qed.
 
 (** THEOREM 1. No consensus protocol is totally correct in spite of one fault. **)
 
-Theorem FLP_main: forall m, exists s, length s > m -> ~ deciding InitialConfiguration s.
+(** We say that a run is deciding provided that some process eventually decides according 
+to the properties of consensus. The theorem says the non-deciding run of arbitrary length
+is possible **)
+
+Theorem FLP: forall m, exists s, length s > m -> ~ decided (run InitialConfiguration s).
 Proof.
 intros m.
 pose proof FLP_Lemma2 as FL2.
-pose proof FLP_Lemma3 as FL3.
-specialize (FL3 InitialConfiguration).
+pose proof FLP_Lemma4 as FL4.
+specialize (FL4 InitialConfiguration).
 intuition.
 specialize (H m).
 destruct H.
 apply ex_intro with (x:=x).
-unfold deciding.
 generalize dependent H.
 unfold bivalent.
 unfold decided.
