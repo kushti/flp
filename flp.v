@@ -36,7 +36,7 @@ Definition Configuration := list ProcessState.
 final state associated with given binary value **)
 Parameter decidedValue: Configuration -> Binary -> Prop.
 
-Definition decided(cfg:Configuration):Prop := decidedValue cfg true \/ decidedValue cfg false.
+Definition decides(cfg:Configuration):Prop := decidedValue cfg true \/ decidedValue cfg false.
 
 (** No two processes decide differently **)
 Axiom Agreement: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
@@ -86,13 +86,12 @@ Definition univalent_false(cfg:Configuration):=
 
 Definition univalent(cfg:Configuration):= univalent_true cfg \/ univalent_false cfg.
 
-Definition bivalent(cfg:Configuration):= (~ decided cfg) /\
+Definition bivalent(cfg:Configuration):= (~ decides cfg) /\
   (exists s1, decidedValue (run cfg s1) false) /\ (exists s2, decidedValue (run cfg s2) true).
 
 
 (** "By the total correctness of P, and the fact that there are always admissible runs, V > 0" **)
 Axiom Correctness: forall cfg, bivalent cfg \/ univalent cfg.
-
 
 
 Lemma UnNotBiv: forall cfg, univalent cfg <-> ~ bivalent cfg.
@@ -495,7 +494,7 @@ Qed.
 
 Parameter InitialConfiguration: Configuration.
 
-Axiom InitialNoConsensus: ~decided InitialConfiguration.
+Axiom InitialNoConsensus: ~decides InitialConfiguration.
 Axiom TrueReacheable: exists s1, decidedValue (run InitialConfiguration s1) true.
 Axiom FalseReacheable: exists s2, decidedValue (run InitialConfiguration s2) false.
 
@@ -517,7 +516,7 @@ Qed.
 to the properties of consensus. The theorem says the non-deciding run of arbitrary length
 is possible **)
 
-Theorem FLP: forall m, exists s, length s > m -> ~ decided (run InitialConfiguration s).
+Theorem FLP: forall m, exists s, length s > m -> ~ decides (run InitialConfiguration s).
 Proof.
 intros m.
 pose proof FLP_Lemma2 as FL2.
@@ -529,6 +528,6 @@ destruct H.
 apply ex_intro with (x:=x).
 generalize dependent H.
 unfold bivalent.
-unfold decided.
+unfold decides.
 tauto.
 Qed.
