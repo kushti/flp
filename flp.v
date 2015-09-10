@@ -78,13 +78,13 @@ auto.
 Qed.
 
 
-Definition univalent_true(cfg:Configuration):= 
+Definition true_univalent(cfg:Configuration):= 
   (exists s1, decidedValue(run cfg s1) true) /\ ~(exists s2, decidedValue (run cfg s2) false).
 
-Definition univalent_false(cfg:Configuration):= 
+Definition false_univalent(cfg:Configuration):= 
   (exists s1, decidedValue(run cfg s1) false) /\ ~(exists s2, decidedValue (run cfg s2) true).
 
-Definition univalent(cfg:Configuration):= univalent_true cfg \/ univalent_false cfg.
+Definition univalent(cfg:Configuration):= true_univalent cfg \/ false_univalent cfg.
 
 Definition bivalent(cfg:Configuration):= (~ decides cfg) /\
   (exists s1, decidedValue (run cfg s1) false) /\ (exists s2, decidedValue (run cfg s2) true).
@@ -99,8 +99,8 @@ Proof.
 intros cfg.
 unfold bivalent.
 unfold univalent.
-unfold univalent_true.
-unfold univalent_false.
+unfold true_univalent.
+unfold false_univalent.
 pose proof Correctness as C.
 specialize (C cfg).
 tauto.
@@ -112,8 +112,8 @@ Proof.
 intros.
 unfold bivalent.
 unfold univalent.
-unfold univalent_true.
-unfold univalent_false.
+unfold true_univalent.
+unfold false_univalent.
 pose proof Correctness as C.
 specialize (C cfg).
 tauto.
@@ -121,13 +121,13 @@ Qed.
 
 
 Lemma BivalentPaths: forall cfg, bivalent cfg ->
-  (exists ps1, univalent_false(run cfg (ps1))) /\ 
-  (exists ps2, univalent_true(run cfg (ps2))).
+  (exists ps1, false_univalent(run cfg (ps1))) /\ 
+  (exists ps2, true_univalent(run cfg (ps2))).
 Proof.
 intros cfg.
 pose proof Agreement as A.
 pose proof Termination1 as T.
-unfold bivalent. unfold univalent_false. unfold univalent_true.
+unfold bivalent. unfold false_univalent. unfold true_univalent.
 intuition.
 destruct H.
 destruct H2.
@@ -157,8 +157,8 @@ Qed.
 
 
 Lemma BivalentPaths2: forall cfg, bivalent cfg ->
-  (exists pid1 ps1, univalent_false(run cfg (pid1::ps1))) /\ 
-  (exists pid2 ps2, univalent_true(run cfg (pid2::ps2))).
+  (exists pid1 ps1, false_univalent(run cfg (pid1::ps1))) /\ 
+  (exists pid2 ps2, true_univalent(run cfg (pid2::ps2))).
 Proof.
 intros cfg.
 pose proof BivalentPaths as BP.
@@ -176,7 +176,7 @@ Qed.
 
 
 
-Lemma UnFNotBiv: forall cfg, univalent_false cfg -> ~ bivalent cfg.
+Lemma UnFNotBiv: forall cfg, false_univalent cfg -> ~ bivalent cfg.
 Proof.
 intros cfg.
 pose proof Correctness as C.
@@ -184,19 +184,19 @@ specialize (C cfg).
 pose proof BivalentPaths as B.
 specialize (B cfg).
 unfold univalent in C.
-unfold univalent_false.
+unfold false_univalent.
 unfold bivalent.
-unfold univalent_false in C.
-unfold univalent_true in C.
+unfold false_univalent in C.
+unfold true_univalent in C.
 unfold bivalent in C.
-unfold univalent_false in B.
-unfold univalent_true in B.
+unfold false_univalent in B.
+unfold true_univalent in B.
 unfold bivalent in B.
 tauto.
 Qed.
 
 
-Lemma UnTNotBiv: forall cfg, univalent_true cfg -> ~ bivalent cfg.
+Lemma UnTNotBiv: forall cfg, true_univalent cfg -> ~ bivalent cfg.
 Proof.
 intros cfg.
 pose proof Correctness as C.
@@ -204,25 +204,25 @@ specialize (C cfg).
 pose proof BivalentPaths as B.
 specialize (B cfg).
 unfold univalent in C.
-unfold univalent_true.
+unfold true_univalent.
 unfold bivalent.
-unfold univalent_false in C.
-unfold univalent_true in C.
+unfold false_univalent in C.
+unfold true_univalent in C.
 unfold bivalent in C.
-unfold univalent_false in B.
-unfold univalent_true in B.
+unfold false_univalent in B.
+unfold true_univalent in B.
 unfold bivalent in B.
 tauto.
 Qed.
 
 
 
-Lemma Correctness2: forall cfg, univalent_true cfg -> univalent_false cfg -> False.
+Lemma Correctness2: forall cfg, true_univalent cfg -> false_univalent cfg -> False.
 Proof.
 intros.
-unfold univalent_true in H.
+unfold true_univalent in H.
 destruct H.
-unfold univalent_false in H0.
+unfold false_univalent in H0.
 destruct H.
 destruct H0.
 destruct H0.
@@ -231,12 +231,12 @@ exists x0.
 trivial.
 Qed.
 
-Lemma Correctness3: forall cfg, univalent_false cfg -> univalent_true cfg -> False.
+Lemma Correctness3: forall cfg, false_univalent cfg -> true_univalent cfg -> False.
 Proof.
 intros.
-unfold univalent_false in H.
+unfold false_univalent in H.
 destruct H.
-unfold univalent_true in H0.
+unfold true_univalent in H0.
 destruct H.
 destruct H0.
 destruct H0.
@@ -245,11 +245,11 @@ exists x0.
 trivial.
 Qed.
 
-Lemma Correctness4: forall cfg ps, univalent_false cfg -> ~ univalent_true (run cfg ps).
+Lemma Correctness4: forall cfg ps, false_univalent cfg -> ~ true_univalent (run cfg ps).
 Proof.
 intros cfg ps.
-unfold univalent_false.
-unfold univalent_true.
+unfold false_univalent.
+unfold true_univalent.
 intuition.
 destruct H.
 pose proof RunCommutativity as RC.
@@ -260,11 +260,11 @@ firstorder.
 Qed.
 
 
-Lemma Correctness5: forall cfg ps, univalent_true cfg -> ~ univalent_false (run cfg ps).
+Lemma Correctness5: forall cfg ps, true_univalent cfg -> ~ false_univalent (run cfg ps).
 Proof.
 intros cfg ps.
-unfold univalent_false.
-unfold univalent_true.
+unfold false_univalent.
+unfold true_univalent.
 intuition.
 destruct H.
 pose proof RunCommutativity as RC.
@@ -274,11 +274,11 @@ generalize dependent H.
 firstorder.
 Qed.
 
-Axiom Correctness6: forall cfg ps, univalent_true cfg -> univalent_true (run cfg ps).
-Axiom Correctness7: forall cfg ps, univalent_false cfg -> univalent_false (run cfg ps).
+Axiom Correctness6: forall cfg ps, true_univalent cfg -> true_univalent (run cfg ps).
+Axiom Correctness7: forall cfg ps, false_univalent cfg -> false_univalent (run cfg ps).
 
 
-Lemma Lemma3: forall cfg pid ps, univalent_false (run cfg (pid :: ps)) -> bivalent (run cfg [pid]) \/ univalent_false (run cfg [pid]).
+Lemma Lemma3: forall cfg pid ps, false_univalent (run cfg (pid :: ps)) -> bivalent (run cfg [pid]) \/ false_univalent (run cfg [pid]).
 Proof.
 intros.
 pose proof Correctness as C.
@@ -296,7 +296,7 @@ tauto.
 Qed.
 
 
-Lemma Correctness9: forall cfg pid ps, univalent_true (run cfg (pid :: ps)) -> bivalent (run cfg [pid]) \/ univalent_true (run cfg [pid]).
+Lemma Correctness9: forall cfg pid ps, true_univalent (run cfg (pid :: ps)) -> bivalent (run cfg [pid]) \/ true_univalent (run cfg [pid]).
 Proof.
 intros.
 pose proof Correctness as C.
@@ -324,8 +324,8 @@ Axiom Decidability: forall pid1 pid2, pid1 = pid2 \/ pid1 <> pid2.
 
 Lemma OneStepLemmaP1: forall cfg pid1 pid2, 
   pid1 <> pid2 /\ 
-    univalent_false (run cfg [pid1]) /\
-    univalent_true (run cfg [pid2])-> False.
+    false_univalent (run cfg [pid1]) /\
+    true_univalent (run cfg [pid2])-> False.
 Proof.
 intuition.
 pose proof RunCommutativity2 as RC.
@@ -346,8 +346,8 @@ tauto.
 Qed.
 
 Lemma Lemma1: forall cfg p1 p2,  
-    univalent_false (run cfg [p1]) /\
-    univalent_true (run cfg [p2]) -> p1 = p2.
+    false_univalent (run cfg [p1]) /\
+    true_univalent (run cfg [p2]) -> p1 = p2.
 Proof.
 intros cfg p1 p2.
 pose proof OneStepLemmaP1 as P1.
@@ -363,15 +363,15 @@ Parameter anotherProcess: Configuration -> ProcessId -> ProcessId.
 Axiom AnotherProcessStepExists: forall cfg p1, anotherProcess cfg p1 <> p1.
 
 
-Lemma BivNotUnTAndUnF: forall cfg, bivalent cfg <-> ~ univalent_true cfg /\ ~ univalent_false cfg.
+Lemma BivNotUnTAndUnF: forall cfg, bivalent cfg <-> ~ true_univalent cfg /\ ~ false_univalent cfg.
 Proof.
 intros.
 intuition.
-(** CASE: univalent_true cfg **)
+(** CASE: true_univalent cfg **)
 pose proof UnTNotBiv as UT.
 specialize(UT cfg).
 tauto.
-(** CASE: univalent_false cfg **)
+(** CASE: false_univalent cfg **)
 pose proof UnFNotBiv as UF.
 specialize(UF cfg).
 tauto.
@@ -382,7 +382,7 @@ tauto.
 Qed.
 
 Lemma Lemma2: forall cfg p1 p2, (p1 = p2 /\ 
-  univalent_true (run cfg [p1]) /\ univalent_false (run cfg [p2])) -> 
+  true_univalent (run cfg [p1]) /\ false_univalent (run cfg [p2])) -> 
   forall p, p <> p1 -> bivalent (run cfg [p]).
 Proof.
 intuition.
@@ -390,20 +390,20 @@ apply BivNotUn.
 unfold univalent.
 pose proof OneStepLemmaP1 as P1.
 intuition.
-(** CASE : univalent_true (run cfg [step]) **)
+(** CASE : true_univalent (run cfg [step]) **)
 assert(P1T := P1 cfg p2 p).
 rewrite H0 in H1.
 auto.
-(** CASE : univalent_false (run cfg [step]) **)
+(** CASE : false_univalent (run cfg [step]) **)
 assert(P1H := P1 cfg p p1).
 auto.
 Qed. 
 
 
-(** only the same process could goes to univalent_true & univalent_false states, so if we choose another process
+(** only the same process could goes to true_univalent & false_univalent states, so if we choose another process
 it must be bivalent as proven by the OtherBivalent lemma **)
 
-Lemma OneStepLemmaP3: forall cfg p1 p2, univalent_true (run cfg [p1]) /\ univalent_false (run cfg [p2]) -> 
+Lemma OneStepLemmaP3: forall cfg p1 p2, true_univalent (run cfg [p1]) /\ false_univalent (run cfg [p2]) -> 
   exists p: ProcessId, bivalent (run cfg [p]).  
 Proof.
 intros.
@@ -445,10 +445,10 @@ pose proof BivalentPaths2 as B2.
 specialize(B2 cfg).
 destruct H0.
 
-(** CASE: univalent_true (run cfg [rp]) - follow univalent_false path then if processes are different **)
+(** CASE: true_univalent (run cfg [rp]) - follow false_univalent path then if processes are different **)
 intuition.
 destruct H2.
-(** if there are some steps before entering univalent_false, enter first one if processes are different or step
+(** if there are some steps before entering false_univalent, enter first one if processes are different or step
 with other process (it should be bivalent if protocol is partially correct) **)
 destruct H1.
 pose proof Lemma3 as C8.
@@ -460,7 +460,7 @@ pose proof OneStepLemmaP3 as P3.
 specialize(P3 cfg rp x).
 tauto.
 
-(** CASE: univalent_false (run cfg [rp]) - symmetrical to previous **)
+(** CASE: false_univalent (run cfg [rp]) - symmetrical to previous **)
 intuition.
 destruct H3.
 destruct H1.
