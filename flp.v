@@ -26,11 +26,13 @@ Definition Binary := bool.
 encoding process identificator within a number as well, so there's bidirectional 
 injective mapping (process_id, state) <-> nat **) 
 
-Definition ProcessState := nat. 
+(** Definition ProcessState := nat. **)
 
-Parameter Process: Set.
+Parameter Process: Set. 
 
-Definition Configuration := list ProcessState.
+Definition Step := nat.
+
+Definition Configuration := list Step.
 
 (** Abstract function returning True if some process(es) in configuration reached 
 final state associated with given binary value **)
@@ -41,13 +43,12 @@ Definition decides(cfg:Configuration):Prop := decidedValue cfg true \/ decidedVa
 (** No two processes decide differently **)
 Axiom Agreement: forall cfg, ~(decidedValue cfg true /\ decidedValue cfg false).
 
-Definition Step := nat.
 
 Parameter processId: Step -> Process.
 
 
 (** Configuration transition function **) 
-Parameter stepFn : Configuration -> Step -> Configuration.
+Definition stepFn(cfg:Configuration)(step:Step):Configuration := cfg ++ [step].
 
 (** There's no change in deciding value **)
 Axiom Termination: forall cfg b step, decidedValue cfg b -> decidedValue (stepFn cfg step) b.
@@ -284,23 +285,29 @@ Axiom Correctness6: forall cfg ps, true_univalent cfg -> true_univalent (run cfg
 Axiom Correctness7: forall cfg ps, false_univalent cfg -> false_univalent (run cfg ps).
 
 
-Lemma Lemma3: forall cfg pid ps, false_univalent (run cfg (pid :: ps)) -> bivalent (run cfg [pid]) \/ false_univalent (run cfg [pid]).
+Lemma Lemma3: forall cfg ss, false_univalent (run cfg ss) -> bivalent cfg \/ false_univalent cfg.
 Proof.
 intros.
 pose proof Correctness as C.
-specialize(C (run cfg [pid])).
+specialize(C cfg).
 unfold univalent in C.
 destruct C.
 tauto.
 pose proof Correctness5 as C5.
-specialize(C5 (run cfg [pid]) ps).
+specialize(C5 cfg ss).
 intuition.
-pose proof RunCommutativity2 as RC2.
-specialize(RC2 cfg pid ps).
-rewrite RC2 in H0.
-tauto.
 Qed.
 
+Lemma Lemma3C: forall cfg s ss, false_univalent (run cfg (s :: ss)) -> bivalent (run cfg [s]) \/ false_univalent (run cfg [s]).
+Proof.
+intros.
+pose proof RunCommutativity2 as RC2.
+pose proof Lemma3 as L3.
+specialize (RC2 cfg s ss).
+specialize (L3 (run cfg [s]) ss).
+rewrite RC2 in L3.
+tauto.
+Qed.
 
 Lemma Correctness9: forall cfg pid ps, true_univalent (run cfg (pid :: ps)) -> bivalent (run cfg [pid]) \/ true_univalent (run cfg [pid]).
 Proof.
@@ -451,8 +458,8 @@ destruct H2.
 (** if there are some steps before entering false_univalent, enter first one if processes are different or step
 with other process (it should be bivalent if protocol is partially correct) **)
 destruct H1.
-pose proof Lemma3 as C8.
-specialize(C8 cfg x x0).
+pose proof Lemma3C as L3.
+specialize(L3 cfg x x0).
 intuition.
 exists x.
 trivial.
@@ -492,7 +499,7 @@ Qed.
 
 (** Initial Configuration & its properties **)
 
-Parameter InitialConfiguration: Configuration.
+Variable InitialConfiguration: Configuration.
 
 Axiom InitialNoConsensus: ~decides InitialConfiguration.
 Axiom TrueReacheable: exists s1, decidedValue (run InitialConfiguration s1) true.
