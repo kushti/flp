@@ -328,16 +328,13 @@ Qed.
 
 
 
-Axiom Async1: forall cfg s1 s2, processId s1 <> processId s2 -> run cfg ([s1;s2]) = run cfg ([s2;s1]).
+Axiom Async1: forall cfg s1 s2, processId s1 <> processId s2 /\ run cfg ([s1;s2]) = run cfg ([s2;s1]).
 
-(**todo: remove
-Axiom Decidability: forall pid1 pid2, pid1 = pid2 \/ pid1 <> pid2.
-**)
 
 Lemma OneStepLemmaP1: forall cfg s1 s2, 
   processId s1 <> processId s2 /\ 
     false_univalent (run cfg [s1]) /\
-    true_univalent (run cfg [s2])-> False.
+    true_univalent (run cfg [s2]) -> False.
 Proof.
 intuition.
 pose proof RunCommutativity2 as RC.
@@ -351,9 +348,9 @@ rewrite RC in C6.
 specialize (C7 (run cfg [s1]) [s2]).
 rewrite RC in C7.
 intuition.
-rewrite H1 in H3.
 pose proof Correctness3 as C3.
 specialize(C3 (run cfg [s2; s1])).
+rewrite H3 in H4.
 tauto.
 Qed.
 
